@@ -13,6 +13,14 @@ import (
 type CollectorConfig struct {
 	HealthCheckConfig CollectorHealthCheckConfig `yaml:"healthcheck" config:"healthcheck" json:"healthcheck"`
 	TelemetryConfig   CollectorTelemetryConfig   `yaml:"telemetry" config:"telemetry" json:"telemetry"`
+	CustomConfig      CustomOTelConfig           `yaml:"custom_config" config:"custom_config" json:"custom_config"`
+}
+
+// CustomOTelConfig selects an optional YAML file merged into the Fleet-built
+// OTel collector configuration (Fleet-managed mode only).
+type CustomOTelConfig struct {
+	Enabled bool   `yaml:"enabled" config:"enabled" json:"enabled"`
+	Path    string `yaml:"path" config:"path" json:"path"`
 }
 
 type CollectorHealthCheckConfig struct {
@@ -43,7 +51,22 @@ func DefaultCollectorConfig() *CollectorConfig {
 	return &CollectorConfig{
 		HealthCheckConfig: CollectorHealthCheckConfig{},
 		TelemetryConfig:   CollectorTelemetryConfig{},
+		CustomConfig:      CustomOTelConfig{},
 	}
+}
+
+// Validate checks collector settings including custom OTel file options.
+func (c *CollectorConfig) Validate() error {
+	if err := c.HealthCheckConfig.Validate(); err != nil {
+		return err
+	}
+	if err := c.TelemetryConfig.Validate(); err != nil {
+		return err
+	}
+	if c.CustomConfig.Enabled && c.CustomConfig.Path == "" {
+		return fmt.Errorf("agent.collector.custom_config.enabled is true but agent.collector.custom_config.path is empty")
+	}
+	return nil
 }
 
 func validateEndpoint(endpoint string) error {

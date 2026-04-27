@@ -164,7 +164,7 @@ type OTelManager interface {
 	Runner
 
 	// Update updates the current plain configuration for the otel collector and components.
-	Update(*confmap.Conf, *configuration.SettingsConfig, logp.Level, []component.Component)
+	Update(*confmap.Conf, *configuration.SettingsConfig, logp.Level, []component.Component, bool)
 
 	// WatchCollector returns a channel to watch for collector status updates.
 	WatchCollector() <-chan *status.AggregateStatus
@@ -1797,6 +1797,12 @@ func (c *Coordinator) processConfigAgent(ctx context.Context, cfg *config.Config
 	}
 	c.currentCfg = currentCfg
 
+	if currentCfg.Settings != nil && currentCfg.Settings.Collector != nil {
+		if err := currentCfg.Settings.Collector.Validate(); err != nil {
+			return fmt.Errorf("invalid collector configuration: %w", err)
+		}
+	}
+
 	// check if log level has changed for standalone elastic-agent
 	// we'd have to update both the periodic and once config watchers and refactor initialization in application.go to do otherwise.
 	if c.agentInfo.IsStandalone() {
@@ -2133,7 +2139,7 @@ func (c *Coordinator) applyOTelUpdate(components []component.Component) {
 	if len(ids) > 0 {
 		c.logger.With("component_ids", ids).Info("Using OpenTelemetry collector runtime.")
 	}
-	c.otelMgr.Update(c.otelCfg, c.currentCfg.Settings, c.state.LogLevel, components)
+	c.otelMgr.Update(c.otelCfg, c.currentCfg.Settings, c.state.LogLevel, components, c.isManaged)
 }
 
 // forceApplyPendingTransitions applies all deferred updates regardless of

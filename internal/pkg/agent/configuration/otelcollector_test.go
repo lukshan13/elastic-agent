@@ -82,4 +82,15 @@ func TestDefaultCollectorConfig(t *testing.T) {
 	assert.NotNil(t, defaultConfig)
 	assert.Equal(t, CollectorHealthCheckConfig{}, defaultConfig.HealthCheckConfig)
 	assert.Equal(t, CollectorTelemetryConfig{}, defaultConfig.TelemetryConfig)
+	assert.Equal(t, CustomOTelConfig{}, defaultConfig.CustomConfig)
+}
+
+func TestCollectorConfig_CustomConfigValidate(t *testing.T) {
+	cfg := &CollectorConfig{
+		CustomConfig: CustomOTelConfig{Enabled: true, Path: ""},
+	}
+	assert.Error(t, cfg.Validate())
+
+	cfg.CustomConfig.Path = "/tmp/x.yml"
+	assert.NoError(t, cfg.Validate())
 }

@@ -1788,7 +1788,7 @@ func (f *fakeOTelManager) Errors() <-chan error {
 	return f.errChan
 }
 
-func (f *fakeOTelManager) Update(cfg *confmap.Conf, settings *configuration.SettingsConfig, ll logp.Level, components []component.Component) {
+func (f *fakeOTelManager) Update(cfg *confmap.Conf, settings *configuration.SettingsConfig, ll logp.Level, components []component.Component, _ bool) {
 	var collectorResult, componentResult error
 	if f.updateCollectorCallback != nil {
 		collectorResult = f.updateCollectorCallback(cfg)

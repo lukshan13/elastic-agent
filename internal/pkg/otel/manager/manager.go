@@ -63,10 +63,11 @@ type collectorRecoveryTimer interface {
 }
 
 type configUpdate struct {
-	collectorCfg  *confmap.Conf
-	settingsCfg   *configuration.SettingsConfig
-	components    []component.Component
-	agentLogLevel logp.Level
+	collectorCfg   *confmap.Conf
+	settingsCfg    *configuration.SettingsConfig
+	components     []component.Component
+	agentLogLevel  logp.Level
+	fleetManaged   bool
 }
 
 // OTelManager is a manager that manages the lifecycle of the OTel collector inside of the Elastic Agent.
@@ -511,6 +512,10 @@ func (m *OTelManager) buildMergedConfig(
 		return nil, fmt.Errorf("failed to add collector metrics reader: %w", err)
 	}
 
+	if err := mergeFleetCustomAdditionalConfig(logger, mergedOtelCfg, cfgUpdate.fleetManaged, cfgUpdate.settingsCfg); err != nil {
+		return nil, fmt.Errorf("fleet custom otel config: %w", err)
+	}
+
 	return mergedOtelCfg, nil
 }
 
@@ -716,12 +721,13 @@ func (m *OTelManager) applyMergedConfig(
 }
 
 // Update sends collector configuration and component updates to the manager's run loop.
-func (m *OTelManager) Update(cfg *confmap.Conf, settings *configuration.SettingsConfig, ll logp.Level, components []component.Component) {
+func (m *OTelManager) Update(cfg *confmap.Conf, settings *configuration.SettingsConfig, ll logp.Level, components []component.Component, fleetManaged bool) {
 	cfgUpdate := configUpdate{
-		collectorCfg:  cfg,
-		settingsCfg:   settings,
-		components:    components,
-		agentLogLevel: ll,
+		collectorCfg:   cfg,
+		settingsCfg:    settings,
+		components:     components,
+		agentLogLevel:  ll,
+		fleetManaged:   fleetManaged,
 	}
 
 	// we care only about the latest config update

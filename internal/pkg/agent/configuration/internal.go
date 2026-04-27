@@ -8,6 +8,11 @@ import "github.com/elastic/elastic-agent/pkg/component"
 
 type InternalConfig struct {
 	Runtime *component.RuntimeConfig `yaml:"runtime" config:"runtime" json:"runtime"`
+	Agent   *InternalAgentConfig     `yaml:"agent" config:"agent" json:"agent"`
+}
+
+type InternalAgentConfig struct {
+	Collector *CollectorConfig `yaml:"collector" config:"collector" json:"collector"`
 }
 
 func DefaultInternalConfig() *InternalConfig {
