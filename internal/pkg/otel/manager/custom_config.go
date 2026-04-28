@@ -492,10 +492,13 @@ func mergeFleetCustomAdditionalConfig(
 	fleetManaged bool,
 	settings *configuration.SettingsConfig,
 ) error {
+	// Custom collector YAML merge is supported only for Fleet-managed policies.
 	if !fleetManaged || settings == nil {
 		return nil
 	}
 	var cc configuration.CustomOTelConfig
+	// Prefer user-facing settings and fall back to internal wiring for
+	// backwards compatibility with Fleet-shaped policy translation.
 	if settings.Collector != nil {
 		cc = settings.Collector.CustomConfig
 	}
@@ -511,6 +514,8 @@ func mergeFleetCustomAdditionalConfig(
 
 	additionalRoot, err := loadAndValidateCustomOTelYAML(cc.Path)
 	if errors.Is(err, errCustomOTelFileNotExist) {
+		// Missing file is intentionally non-fatal: keep the Fleet-generated
+		// collector config and continue running.
 		logger.Warnf("custom otel config enabled but file not found; skipping merge path=%s", cc.Path)
 		return nil
 	}
@@ -534,6 +539,8 @@ func mergeFleetCustomAdditionalConfig(
 		if err := applyAdditionalServiceTelemetry(mergedOtelCfg, svc); err != nil {
 			return fmt.Errorf("merge custom otel config from %q: %w", cc.Path, err)
 		}
+		// service.extensions and service.telemetry are consumed by specialized
+		// merge logic above and removed to avoid overwrite behavior in Conf.Merge.
 		pruneEmptyServiceSubkeys(svc)
 		if len(svc) == 0 {
 			delete(additionalRoot, "service")
